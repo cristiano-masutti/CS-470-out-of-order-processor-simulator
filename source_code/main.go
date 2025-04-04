@@ -1,7 +1,7 @@
 package main
 
 import (
-	"aca_hw1/data_structures"
+	"aca_hw1/execution"
 	"aca_hw1/files_operations"
 	"fmt"
 	"log"
@@ -26,27 +26,35 @@ func main() {
 		log.Fatal(err)
 	}
 
-	processorState := data_structures.NewProcessorState(inputInstructions)
+	processorState := execution.NewProcessorState(inputInstructions)
 
 	for {
-		processorState.Propagate()
-		processorState.Latch()
-
-		err = processorState.SaveState(outputFile)
-
+		err = processorState.Propagate()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if processorState.PC == uint64(len(program)) && len(processorState.ActiveList) == 0 {
-			break
+		err = processorState.Latch()
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		err = processorState.SaveState(outputFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		break
+
+		//if processorState.PC == uint64(len(program)) && len(processorState.ActiveList) == 0 {
+		//	break
+		//}
 	}
 
-	err = files_operations.WriteOutputFile(outputFile, inputInstructions)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//err = files_operations.WriteOutputFile(outputFile, inputInstructions)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
 	fmt.Println("Output written to", outputFile)
 }

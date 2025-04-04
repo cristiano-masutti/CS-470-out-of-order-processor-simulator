@@ -1,14 +1,14 @@
 package files_operations
 
 import (
-	"aca_hw1/data_structures"
+	"aca_hw1/execution"
 	"encoding/json"
 	"fmt"
 	"os"
 )
 
 // Function to read the input JSON file and return the decoded data
-func ReadInputFile(inputFile string) (*data_structures.InputInstructions, error) {
+func ReadInputFile(inputFile string) (*execution.InputInstructions, error) {
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
 		return nil, fmt.Errorf("error reading input file: %v", err)
@@ -20,7 +20,7 @@ func ReadInputFile(inputFile string) (*data_structures.InputInstructions, error)
 		return nil, fmt.Errorf("error unmarshalling JSON: %v", err)
 	}
 
-	inputInstructions := data_structures.InputInstructions{
+	inputInstructions := execution.InputInstructions{
 		Instructions: instructionsList,
 	}
 

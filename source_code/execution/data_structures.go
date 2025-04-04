@@ -1,4 +1,4 @@
-package data_structures
+package execution
 
 import (
 	"encoding/json"
@@ -10,6 +10,10 @@ import (
 
 type InputInstructions struct {
 	Instructions []string
+}
+
+func (ii *InputInstructions) GetInstruction(index int) string {
+	return ii.Instructions[index]
 }
 
 // SaveState output file format
@@ -26,10 +30,11 @@ type SaveState struct {
 	IntegerQueue         []IntegerQueueEntry `json:"IntegerQueue"`
 }
 
-// ProcessorState represents state of the processor
+// ProcessorState represents state of the execution
 type ProcessorState struct {
 	InputInstructions    *InputInstructions
 	PCP                  *PCPipelineRegister
+	DPR                  *DirPipelineRegister
 	PhysicalRegisterFile [64]uint64          `json:"PhysicalRegisterFile"`
 	DecodedPCs           []uint64            `json:"DecodedPCs"`
 	Exception            bool                `json:"Exception"`
@@ -76,7 +81,7 @@ func NewProcessorState(instructions *InputInstructions) *ProcessorState {
 	return ps
 }
 
-// SaveState writes processor state to JSON file
+// SaveState writes execution state to JSON file
 func (ps *ProcessorState) SaveState(filename string) error {
 	// Step 1: Extract the current state into SaveState struct
 	var pc uint64
@@ -123,14 +128,6 @@ func (ps *ProcessorState) SaveState(filename string) error {
 	return os.WriteFile(filename, jsonData, 0644)
 }
 
-func (ps *ProcessorState) Propagate() error {
-	return nil
-}
-
-func (ps *ProcessorState) Latch() error {
-	return nil
-}
-
 // ActiveListEntry represents entry in Active List
 type ActiveListEntry struct {
 	Done               bool   `json:"Done"`
@@ -161,10 +158,87 @@ type PCPipelineRegister struct {
 	NewValue     uint64
 }
 
-func (cpl *PCPipelineRegister) FetchedOperations(incNumber uint64) {
-	cpl.NewValue = cpl.CurrentValue + incNumber
+func (pcpr *PCPipelineRegister) SetNextValue(incNumber uint64) {
+	pcpr.NewValue = pcpr.CurrentValue + incNumber
 }
 
-func (cpl *PCPipelineRegister) LatchPCPipelineRegister() {
-	cpl.CurrentValue = cpl.NewValue
+func (pcpr *PCPipelineRegister) LatchPCPipelineRegister() {
+	pcpr.CurrentValue = pcpr.NewValue
+}
+
+func (pcpr *PCPipelineRegister) GetCurrentValue() uint64 {
+	return pcpr.CurrentValue
+}
+
+type DirPipelineRegister struct {
+	CurrentValue []Instruction
+	NewValue     []Instruction
+}
+
+func (dpr *DirPipelineRegister) SetNextValue(newDecodedInstructions []Instruction) {
+	dpr.NewValue = newDecodedInstructions
+}
+
+func (dpr *DirPipelineRegister) LatchPCPipelineRegister() {
+	dpr.CurrentValue = dpr.NewValue
+}
+
+func (dpr *DirPipelineRegister) GetCurrentValue() []Instruction {
+	return dpr.CurrentValue
+}
+
+// Instructions types
+
+type Instruction interface {
+	GetPC() int
+}
+
+type BaseInstruction struct {
+	PC int
+}
+
+func (b *BaseInstruction) GetPC() int {
+	return b.PC
+}
+
+type Add struct {
+	BaseInstruction
+	Dest string
+	OpA  string
+	OpB  string
+}
+
+type Addi struct {
+	BaseInstruction
+	Dest string
+	OpA  string
+	Imm  int
+}
+
+type Sub struct {
+	BaseInstruction
+	Dest string
+	OpA  string
+	OpB  string
+}
+
+type Mulu struct {
+	BaseInstruction
+	Dest string
+	OpA  string
+	OpB  string
+}
+
+type Divu struct {
+	BaseInstruction
+	Dest string
+	OpA  string
+	OpB  string
+}
+
+type Remu struct {
+	BaseInstruction
+	Dest string
+	OpA  string
+	OpB  string
 }
