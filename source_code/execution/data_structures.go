@@ -6,60 +6,54 @@ import (
 	"os"
 )
 
-// Input
-
-type InputInstructions struct {
-	Instructions []string
-}
-
-func (ii *InputInstructions) GetInstruction(index int) string {
-	return ii.Instructions[index]
-}
-
 // SaveState output file format
 type SaveState struct {
-	PC                   uint64              `json:"PC"`
-	PhysicalRegisterFile [64]uint64          `json:"PhysicalRegisterFile"`
+	ActiveList           []ActiveListEntry   `json:"ActiveList"`
+	BusyBitTable         []bool              `json:"BusyBitTable"`
 	DecodedPCs           []uint64            `json:"DecodedPCs"`
 	Exception            bool                `json:"Exception"`
 	ExceptionPC          uint64              `json:"ExceptionPC"`
-	RegisterMapTable     [32]uint8           `json:"RegisterMapTable"`
-	FreeList             []uint8             `json:"FreeList"`
-	BusyBitTable         [64]bool            `json:"BusyBitTable"`
-	ActiveList           []ActiveListEntry   `json:"ActiveList"`
+	FreeList             []uint64            `json:"FreeList"`
 	IntegerQueue         []IntegerQueueEntry `json:"IntegerQueue"`
+	PC                   uint64              `json:"PC"`
+	PhysicalRegisterFile [64]uint64          `json:"PhysicalRegisterFile"`
+	RegisterMapTable     [32]uint64          `json:"RegisterMapTable"`
 }
 
 // ProcessorState represents state of the execution
 type ProcessorState struct {
-	InputInstructions    *InputInstructions
+	InputInstructions    []Instruction
 	PCP                  *PCPipelineRegister
 	DPR                  *DirPipelineRegister
-	PhysicalRegisterFile [64]uint64          `json:"PhysicalRegisterFile"`
-	DecodedPCs           []uint64            `json:"DecodedPCs"`
-	Exception            bool                `json:"Exception"`
-	ExceptionPC          uint64              `json:"ExceptionPC"`
-	RegisterMapTable     [32]uint8           `json:"RegisterMapTable"`
-	FreeList             []uint8             `json:"FreeList"`
-	BusyBitTable         [64]bool            `json:"BusyBitTable"`
-	ActiveList           []ActiveListEntry   `json:"ActiveList"`
-	IntegerQueue         []IntegerQueueEntry `json:"IntegerQueue"`
+	PhysicalRegisterFile [64]uint64
+	Exception            bool
+	ExceptionPC          uint64
+	RegisterMapTable     [32]uint64
+	FreeList             *FreeList
+	BusyBitTable         *BusyBitTable
+	ActiveList           *ActiveList
+	IntegerQueue         *IntegerQueue
 }
 
 // NewProcessorState create new ProcessorState
-func NewProcessorState(instructions *InputInstructions) *ProcessorState {
+func NewProcessorState(instructions []Instruction) *ProcessorState {
 	ps := &ProcessorState{
 		InputInstructions: instructions,
 		PCP: &PCPipelineRegister{
 			CurrentValue: 0,
 			NewValue:     0,
 		},
-		DecodedPCs:   make([]uint64, 0),
+		DPR: &DirPipelineRegister{
+			CurrentDecodedInstructions: make([]uint64, 0),
+			NewDecodedInstructions:     make([]uint64, 0),
+			BackPressure:               false,
+		},
 		Exception:    false,
 		ExceptionPC:  0,
-		FreeList:     make([]uint8, 32),
-		ActiveList:   make([]ActiveListEntry, 0),
-		IntegerQueue: make([]IntegerQueueEntry, 0),
+		FreeList:     NewFreeList(),
+		ActiveList:   NewActiveList(),
+		IntegerQueue: NewIntegerQueue(),
+		BusyBitTable: NewBusyTable(),
 	}
 
 	for i := range ps.PhysicalRegisterFile {
@@ -67,15 +61,7 @@ func NewProcessorState(instructions *InputInstructions) *ProcessorState {
 	}
 
 	for i := range ps.RegisterMapTable {
-		ps.RegisterMapTable[i] = uint8(i)
-	}
-
-	for i := range ps.FreeList {
-		ps.FreeList[i] = uint8(i + 32)
-	}
-
-	for i := range ps.BusyBitTable {
-		ps.BusyBitTable[i] = false
+		ps.RegisterMapTable[i] = uint64(i)
 	}
 
 	return ps
@@ -83,26 +69,25 @@ func NewProcessorState(instructions *InputInstructions) *ProcessorState {
 
 // SaveState writes execution state to JSON file
 func (ps *ProcessorState) SaveState(filename string) error {
-	// Step 1: Extract the current state into SaveState struct
 	var pc uint64
+
 	if ps.PCP != nil {
 		pc = ps.PCP.CurrentValue
 	}
 
 	newState := SaveState{
-		PC:                   pc,
-		PhysicalRegisterFile: ps.PhysicalRegisterFile,
-		DecodedPCs:           ps.DecodedPCs,
+		ActiveList:           ps.ActiveList.GetActiveList(),
+		BusyBitTable:         ps.BusyBitTable.GetBusyBitTable(),
+		DecodedPCs:           ps.DPR.GetCurrentValue(),
 		Exception:            ps.Exception,
 		ExceptionPC:          ps.ExceptionPC,
+		FreeList:             ps.FreeList.GetFreeList(),
+		IntegerQueue:         ps.IntegerQueue.GetIntegerQueue(),
+		PC:                   pc,
+		PhysicalRegisterFile: ps.PhysicalRegisterFile,
 		RegisterMapTable:     ps.RegisterMapTable,
-		FreeList:             ps.FreeList,
-		BusyBitTable:         ps.BusyBitTable,
-		ActiveList:           ps.ActiveList,
-		IntegerQueue:         ps.IntegerQueue,
 	}
 
-	// Step 2: Read existing data (if file exists)
 	var existingData []SaveState
 	if _, err := os.Stat(filename); err == nil {
 		fileData, err := os.ReadFile(filename)
@@ -116,10 +101,8 @@ func (ps *ProcessorState) SaveState(filename string) error {
 		}
 	}
 
-	// Step 3: Append new state
 	updatedData := append(existingData, newState)
 
-	// Step 4: Write back to file (indented for readability)
 	jsonData, err := json.MarshalIndent(updatedData, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error marshaling data: %v", err)
@@ -128,23 +111,110 @@ func (ps *ProcessorState) SaveState(filename string) error {
 	return os.WriteFile(filename, jsonData, 0644)
 }
 
+type BusyBitTable struct {
+	BusyTableEntries []bool
+}
+
+func NewBusyTable() *BusyBitTable {
+	return &BusyBitTable{make([]bool, 64)}
+}
+
+func (bt *BusyBitTable) GetBusyBitTable() []bool {
+	return bt.BusyTableEntries
+}
+
+// GetRegisterState returns the state of register
+// if returns true, means that value not ready
+// if false, it is ready
+func (bt *BusyBitTable) GetRegisterState(index int) bool {
+	return bt.BusyTableEntries[index]
+}
+
+func (bt *BusyBitTable) SetRegisterState(index int, b bool) {
+	bt.BusyTableEntries[index] = b
+}
+
+type ActiveList struct {
+	ActiveListEntries []ActiveListEntry
+}
+
+func NewActiveList() *ActiveList {
+	return &ActiveList{make([]ActiveListEntry, 0)}
+}
+
+func (al *ActiveList) Append(entry ActiveListEntry) {
+	al.ActiveListEntries = append(al.ActiveListEntries, entry)
+}
+
+func (al *ActiveList) GetActiveList() []ActiveListEntry {
+	return al.ActiveListEntries
+}
+
+type IntegerQueue struct {
+	IntegerQueueEntries []IntegerQueueEntry
+}
+
+func NewIntegerQueue() *IntegerQueue {
+	return &IntegerQueue{make([]IntegerQueueEntry, 0)}
+}
+
+func (qe *IntegerQueue) Append(entry IntegerQueueEntry) {
+	qe.IntegerQueueEntries = append(qe.IntegerQueueEntries, entry)
+}
+
+func (qe *IntegerQueue) GetIntegerQueue() []IntegerQueueEntry {
+	return qe.IntegerQueueEntries
+}
+
+// FreeList to handle free list operation
+type FreeList struct {
+	registerList []uint64
+}
+
+func NewFreeList() *FreeList {
+	registerList := make([]uint64, 32)
+
+	for i := range registerList {
+		registerList[i] = uint64(i + 32)
+	}
+	return &FreeList{
+		registerList: registerList,
+	}
+}
+
+func (fl *FreeList) GetFreeList() []uint64 {
+	return fl.registerList
+}
+
+// GetRegister returns and removes the first register in FIFO order.
+func (fl *FreeList) GetRegister() uint64 {
+	reg := fl.registerList[0]
+	fl.registerList = fl.registerList[1:]
+	return reg
+}
+
+// FreeRegister appends the register ID to the end of the list.
+func (fl *FreeList) FreeRegister(id uint64) {
+	fl.registerList = append(fl.registerList, id)
+}
+
 // ActiveListEntry represents entry in Active List
 type ActiveListEntry struct {
 	Done               bool   `json:"Done"`
 	Exception          bool   `json:"Exception"`
-	LogicalDestination uint8  `json:"LogicalDestination"`
-	OldDestination     uint8  `json:"OldDestination"`
+	LogicalDestination uint64 `json:"LogicalDestination"`
+	OldDestination     uint64 `json:"OldDestination"`
 	PC                 uint64 `json:"PC"`
 }
 
 // IntegerQueueEntry represents entry in Integer Queue
 type IntegerQueueEntry struct {
-	DestRegister uint8  `json:"DestRegister"`
+	DestRegister uint64 `json:"DestRegister"`
 	OpAIsReady   bool   `json:"OpAIsReady"`
-	OpARegTag    uint8  `json:"OpARegTag"`
+	OpARegTag    uint64 `json:"OpARegTag"`
 	OpAValue     uint64 `json:"OpAValue"`
 	OpBIsReady   bool   `json:"OpBIsReady"`
-	OpBRegTag    uint8  `json:"OpBRegTag"`
+	OpBRegTag    uint64 `json:"OpBRegTag"`
 	OpBValue     uint64 `json:"OpBValue"`
 	OpCode       string `json:"OpCode"`
 	PC           uint64 `json:"PC"`
@@ -171,74 +241,98 @@ func (pcpr *PCPipelineRegister) GetCurrentValue() uint64 {
 }
 
 type DirPipelineRegister struct {
-	CurrentValue []Instruction
-	NewValue     []Instruction
+	CurrentDecodedInstructions []uint64
+	NewDecodedInstructions     []uint64
+	BackPressure               bool
 }
 
-func (dpr *DirPipelineRegister) SetNextValue(newDecodedInstructions []Instruction) {
-	dpr.NewValue = newDecodedInstructions
+func (dpr *DirPipelineRegister) SetBackPressure(BackPressure bool) {
+	dpr.BackPressure = BackPressure
+}
+
+func (dpr *DirPipelineRegister) GetBackPressure() bool {
+	return dpr.BackPressure
+}
+
+func (dpr *DirPipelineRegister) SetNextValue(newDecodedInstructions []uint64) {
+	dpr.NewDecodedInstructions = newDecodedInstructions
 }
 
 func (dpr *DirPipelineRegister) LatchPCPipelineRegister() {
-	dpr.CurrentValue = dpr.NewValue
+	dpr.CurrentDecodedInstructions = dpr.NewDecodedInstructions
 }
 
-func (dpr *DirPipelineRegister) GetCurrentValue() []Instruction {
-	return dpr.CurrentValue
+func (dpr *DirPipelineRegister) GetCurrentValue() []uint64 {
+	return dpr.CurrentDecodedInstructions
 }
 
 // Instructions types
 
 type Instruction interface {
-	GetPC() int
+	GetDest() int
+	GetOpA() int
+	GetOpCode() string
+	GetSecondArg() int
 }
 
 type BaseInstruction struct {
-	PC int
+	Dest int
+	OpA  int
 }
 
-func (b *BaseInstruction) GetPC() int {
-	return b.PC
+func (b *BaseInstruction) GetDest() int { return b.Dest }
+func (b *BaseInstruction) GetOpA() int  { return b.OpA }
+func (b *BaseInstruction) GetOpCode() string {
+	return "Base Instruction"
+}
+func (b *BaseInstruction) GetSecondArg() int {
+	return b.OpA
 }
 
 type Add struct {
 	BaseInstruction
-	Dest string
-	OpA  string
-	OpB  string
+	OpB int
 }
+
+func (a *Add) GetOpCode() string { return "add" }
+func (a *Add) GetSecondArg() int { return a.OpB }
 
 type Addi struct {
 	BaseInstruction
-	Dest string
-	OpA  string
-	Imm  int
+	Imm int
 }
+
+func (a *Addi) GetOpCode() string { return "addi" }
+func (a *Addi) GetSecondArg() int { return a.Imm }
 
 type Sub struct {
 	BaseInstruction
-	Dest string
-	OpA  string
-	OpB  string
+	OpB int
 }
+
+func (s *Sub) GetOpCode() string { return "sub" }
+func (s *Sub) GetSecondArg() int { return s.OpB }
 
 type Mulu struct {
 	BaseInstruction
-	Dest string
-	OpA  string
-	OpB  string
+	OpB int
 }
+
+func (m *Mulu) GetOpCode() string { return "mulu" }
+func (m *Mulu) GetSecondArg() int { return m.OpB }
 
 type Divu struct {
 	BaseInstruction
-	Dest string
-	OpA  string
-	OpB  string
+	OpB int
 }
+
+func (d *Divu) GetOpCode() string { return "divu" }
+func (d *Divu) GetSecondArg() int { return d.OpB }
 
 type Remu struct {
 	BaseInstruction
-	Dest string
-	OpA  string
-	OpB  string
+	OpB int
 }
+
+func (r *Remu) GetOpCode() string { return "remu" }
+func (r *Remu) GetSecondArg() int { return r.OpB }

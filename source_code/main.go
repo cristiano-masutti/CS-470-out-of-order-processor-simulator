@@ -5,7 +5,6 @@ import (
 	"aca_hw1/files_operations"
 	"fmt"
 	"log"
-	"os"
 )
 
 /*
@@ -14,21 +13,31 @@ Ideas:
 if or at the false: stop
 */
 func main() {
-	if len(os.Args) < 3 {
-		log.Fatal("Please provide path to input and output file")
-	}
+	//if len(os.Args) < 3 {
+	//	log.Fatal("Please provide path to input and output file")
+	//}
+	//
+	//inputFile := os.Args[1]
+	//outputFile := os.Args[2]
 
-	inputFile := os.Args[1]
-	outputFile := os.Args[2]
+	inputFile := "../given_tests/01/input.json"
+	outputFile := "output.json"
 
-	inputInstructions, err := files_operations.ReadInputFile(inputFile)
+	decodedInputInstructions, err := files_operations.ReadInputFile(inputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	processorState := execution.NewProcessorState(inputInstructions)
+	err = files_operations.CreateOrCleanOutputFile(outputFile)
 
-	for {
+	processorState := execution.NewProcessorState(decodedInputInstructions)
+
+	err = processorState.SaveState(outputFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i := 0; i < 2; i++ {
 		err = processorState.Propagate()
 		if err != nil {
 			log.Fatal(err)
@@ -43,15 +52,13 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		break
-
-		//if processorState.PC == uint64(len(program)) && len(processorState.ActiveList) == 0 {
-		//	break
-		//}
 	}
 
-	//err = files_operations.WriteOutputFile(outputFile, inputInstructions)
+	//if processorState.PC == uint64(len(program)) && len(processorState.ActiveList) == 0 {
+	//	break
+	//}
+
+	//err = files_operations.WriteOutputFile(outputFile, decodedInputInstructions)
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
