@@ -109,10 +109,10 @@ type IntegerQueueEntry struct {
 	DestRegister uint64 `json:"DestRegister"`
 	OpAIsReady   bool   `json:"OpAIsReady"`
 	OpARegTag    uint64 `json:"OpARegTag"`
-	OpAValue     uint64 `json:"OpAValue"`
+	OpAValue     int    `json:"OpAValue"`
 	OpBIsReady   bool   `json:"OpBIsReady"`
 	OpBRegTag    uint64 `json:"OpBRegTag"`
-	OpBValue     uint64 `json:"OpBValue"`
+	OpBValue     int    `json:"OpBValue"`
 	OpCode       string `json:"OpCode"`
 	PC           uint64 `json:"PC"`
 }

@@ -76,10 +76,10 @@ func (ps *ProcessorState) RenameAndDispatch() error {
 				DestRegister: physicalRegister,
 				OpAIsReady:   opAReady,
 				OpARegTag:    opATag,
-				OpAValue:     opAValue,
+				OpAValue:     int(opAValue),
 				OpBIsReady:   true,
 				OpBRegTag:    opATag,
-				OpBValue:     uint64(instruction.GetSecondArg()),
+				OpBValue:     instruction.GetSecondArg(),
 				OpCode:       instruction.GetOpCode(),
 				PC:           uint64(el),
 			}
@@ -99,10 +99,10 @@ func (ps *ProcessorState) RenameAndDispatch() error {
 				DestRegister: physicalRegister,
 				OpAIsReady:   opAReady,
 				OpARegTag:    opATag,
-				OpAValue:     opAValue,
+				OpAValue:     int(opAValue),
 				OpBIsReady:   opBReady,
 				OpBRegTag:    opBTag,
-				OpBValue:     opBValue,
+				OpBValue:     int(opBValue),
 				OpCode:       instruction.GetOpCode(),
 				PC:           uint64(el),
 			}
@@ -115,5 +115,31 @@ func (ps *ProcessorState) RenameAndDispatch() error {
 }
 
 func (ps *ProcessorState) Issue() {
+	instructions := ps.IntegerQueue.GetCurrentIntegerQueue()
 
+	ps.IssuedInstructionPipelineRegister.SetNextSetOfInstructions(instructions)
+}
+
+func (ps *ProcessorState) Execution() {
+	ps.AluPipelineRegisters.SetNextExecutingInstructions(
+		ps.IssuedInstructionPipelineRegister.GetCurrentIssuedInstructions())
+
+	currentExecuteInstructions := ps.AluPipelineRegisters.GetNextExecutingInstructions()
+
+	var results []ForwardingPathsEntry
+
+	for _, iq := range currentExecuteInstructions {
+		instruction := ps.InputInstructions[iq.PC]
+
+		res := uint64(instruction.Execute(iq.OpAValue, iq.OpBValue))
+
+		ps.PhysicalRegisterFile[iq.DestRegister] = res
+
+		results = append(results, ForwardingPathsEntry{
+			tag:   iq.DestRegister,
+			value: res,
+		})
+	}
+
+	ps.ForwardingPaths.SetCompletedInstruction(results)
 }

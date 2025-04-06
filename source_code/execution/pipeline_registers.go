@@ -88,3 +88,36 @@ func NewAluPipelineRegisters() *AluPipelineRegisters {
 		nextExecutingInstructions:    make([]IntegerQueueEntry, 0),
 	}
 }
+
+func (apl *AluPipelineRegisters) SetNextExecutingInstructions(entries []IntegerQueueEntry) {
+	apl.nextExecutingInstructions = entries
+}
+
+func (apl *AluPipelineRegisters) GetNextExecutingInstructions() []IntegerQueueEntry {
+	return apl.nextExecutingInstructions
+}
+
+func (apl *AluPipelineRegisters) Latch() {
+	apl.currentExecutingInstructions = apl.nextExecutingInstructions
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+type ForwardingPathsEntry struct {
+	tag   uint64
+	value uint64
+}
+
+type ForwardingPaths struct {
+	completedInstructions []ForwardingPathsEntry
+}
+
+func NewForwardingPaths() *ForwardingPaths {
+	return &ForwardingPaths{
+		completedInstructions: make([]ForwardingPathsEntry, 0),
+	}
+}
+
+func (fq *ForwardingPaths) SetCompletedInstruction(instructions []ForwardingPathsEntry) {
+	fq.completedInstructions = instructions
+}

@@ -6,6 +6,7 @@ type Instruction interface {
 	GetOpA() int
 	GetOpCode() string
 	GetSecondArg() int
+	Execute(a, b int) int
 }
 
 type BaseInstruction struct {
@@ -13,13 +14,16 @@ type BaseInstruction struct {
 	OpA  int
 }
 
-func (b *BaseInstruction) GetDest() int { return b.Dest }
-func (b *BaseInstruction) GetOpA() int  { return b.OpA }
-func (b *BaseInstruction) GetOpCode() string {
+func (bi *BaseInstruction) GetDest() int { return bi.Dest }
+func (bi *BaseInstruction) GetOpA() int  { return bi.OpA }
+func (bi *BaseInstruction) GetOpCode() string {
 	return "Base Instruction"
 }
-func (b *BaseInstruction) GetSecondArg() int {
-	return b.OpA
+func (bi *BaseInstruction) GetSecondArg() int {
+	return bi.OpA
+}
+func (bi *BaseInstruction) Execute(a, b int) int {
+	return a + b
 }
 
 // Actual Instructions types
@@ -29,45 +33,51 @@ type Add struct {
 	OpB int
 }
 
-func (a *Add) GetOpCode() string { return "add" }
-func (a *Add) GetSecondArg() int { return a.OpB }
+func (ad *Add) GetOpCode() string    { return "add" }
+func (ad *Add) GetSecondArg() int    { return ad.OpB }
+func (ad *Add) Execute(a, b int) int { return a + b }
 
 type Addi struct {
 	BaseInstruction
 	Imm int
 }
 
-func (a *Addi) GetOpCode() string { return "addi" }
-func (a *Addi) GetSecondArg() int { return a.Imm }
+func (ad *Addi) GetOpCode() string    { return "addi" }
+func (ad *Addi) GetSecondArg() int    { return ad.Imm }
+func (ad *Addi) Execute(a, b int) int { return a + b }
 
 type Sub struct {
 	BaseInstruction
 	OpB int
 }
 
-func (s *Sub) GetOpCode() string { return "sub" }
-func (s *Sub) GetSecondArg() int { return s.OpB }
+func (s *Sub) GetOpCode() string    { return "sub" }
+func (s *Sub) GetSecondArg() int    { return s.OpB }
+func (s *Sub) Execute(a, b int) int { return a - b }
 
 type Mulu struct {
 	BaseInstruction
 	OpB int
 }
 
-func (m *Mulu) GetOpCode() string { return "mulu" }
-func (m *Mulu) GetSecondArg() int { return m.OpB }
+func (m *Mulu) GetOpCode() string    { return "mulu" }
+func (m *Mulu) GetSecondArg() int    { return m.OpB }
+func (m *Mulu) Execute(a, b int) int { return int(uint(a) * uint(b)) }
 
 type Divu struct {
 	BaseInstruction
 	OpB int
 }
 
-func (d *Divu) GetOpCode() string { return "divu" }
-func (d *Divu) GetSecondArg() int { return d.OpB }
+func (d *Divu) GetOpCode() string    { return "divu" }
+func (d *Divu) GetSecondArg() int    { return d.OpB }
+func (d *Divu) Execute(a, b int) int { return int(uint(a) / uint(b)) }
 
 type Remu struct {
 	BaseInstruction
 	OpB int
 }
 
-func (r *Remu) GetOpCode() string { return "remu" }
-func (r *Remu) GetSecondArg() int { return r.OpB }
+func (r *Remu) GetOpCode() string    { return "remu" }
+func (r *Remu) GetSecondArg() int    { return r.OpB }
+func (r *Remu) Execute(a, b int) int { return int(uint(a) % uint(b)) }

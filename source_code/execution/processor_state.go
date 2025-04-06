@@ -21,6 +21,7 @@ type ProcessorState struct {
 	IntegerQueue                      *IntegerQueue
 	IssuedInstructionPipelineRegister *IssuedInstructionPipelineRegister
 	AluPipelineRegisters              *AluPipelineRegisters
+	ForwardingPaths                   *ForwardingPaths
 }
 
 // NewProcessorState create new ProcessorState
@@ -44,6 +45,7 @@ func NewProcessorState(instructions []Instruction) *ProcessorState {
 		BusyBitTable:                      NewBusyTable(),
 		IssuedInstructionPipelineRegister: NewIssuedInstructionPipelineRegister(),
 		AluPipelineRegisters:              NewAluPipelineRegisters(),
+		ForwardingPaths:                   NewForwardingPaths(),
 	}
 
 	for i := range ps.PhysicalRegisterFile {
