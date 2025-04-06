@@ -113,3 +113,7 @@ func (ps *ProcessorState) RenameAndDispatch() error {
 
 	return nil
 }
+
+func (ps *ProcessorState) Issue() {
+
+}
