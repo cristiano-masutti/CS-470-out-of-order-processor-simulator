@@ -26,6 +26,10 @@ func (fl *FreeList) GetFreeList() []uint64 {
 	return fl.registerList
 }
 
+func (fl *FreeList) GetIfSpaceAvailable() bool {
+	return len(fl.registerList) >= 4
+}
+
 // GetRegister returns and removes the first register in FIFO order.
 func (fl *FreeList) GetRegister() uint64 {
 	reg := fl.registerList[0]
@@ -94,12 +98,16 @@ func (al *ActiveList) GetActiveList() []ActiveListEntry {
 	return al.CurrentActiveListEntries
 }
 
-func (al *ActiveList) RemoveEntry(pc int) {
-
+func (al *ActiveList) GetIfSpaceAvailable() bool {
+	return len(al.CurrentActiveListEntries)+4 <= 32
 }
 
 func (al *ActiveList) Latch() {
 	al.CurrentActiveListEntries = al.NextActiveListEntries
+}
+
+func (al *ActiveList) RetireInstructions(numberOfInstructions int) {
+	al.NextActiveListEntries = al.NextActiveListEntries[numberOfInstructions:]
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -135,6 +143,28 @@ func (qe *IntegerQueue) Append(entry IntegerQueueEntry) {
 
 func (qe *IntegerQueue) Latch() {
 	qe.CurrentIntegerQueueEntries = qe.NextIntegerQueueEntries
+}
+
+func (qe *IntegerQueue) GetIfSpaceAvailable() bool {
+	return len(qe.CurrentIntegerQueueEntries)+4 <= 32
+}
+
+func (qe *IntegerQueue) ForwardResults(results []ForwardingPathsEntry) {
+	for i, entry := range qe.CurrentIntegerQueueEntries {
+		for _, result := range results {
+			if !entry.OpAIsReady && entry.OpARegTag == result.tag {
+				entry.OpAIsReady = true
+				entry.OpAValue = int(result.value)
+				entry.OpARegTag = 0
+			}
+			if !entry.OpBIsReady && entry.OpBRegTag == result.tag {
+				entry.OpBIsReady = true
+				entry.OpBValue = int(result.value)
+				entry.OpBRegTag = 0
+			}
+		}
+		qe.CurrentIntegerQueueEntries[i] = entry
+	}
 }
 
 func (qe *IntegerQueue) GetReadyInstructions() []IntegerQueueEntry {

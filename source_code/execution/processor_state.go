@@ -19,9 +19,10 @@ type ProcessorState struct {
 	BusyBitTable                      *BusyBitTable
 	ActiveList                        *ActiveList
 	IntegerQueue                      *IntegerQueue
-	IssuedInstructionPipelineRegister *IssuedInstructionPipelineRegister
-	AluPipelineRegisters              *AluPipelineRegisters
+	IssuedInstructionPipelineRegister *InstructionsPipelineRegister
+	AluPipelineRegisters              *InstructionsPipelineRegister
 	ForwardingPaths                   *ForwardingPaths
+	CommitPipeline                    *CommitPipelineRegister
 }
 
 // NewProcessorState create new ProcessorState
@@ -43,9 +44,10 @@ func NewProcessorState(instructions []Instruction) *ProcessorState {
 		ActiveList:                        NewActiveList(),
 		IntegerQueue:                      NewIntegerQueue(),
 		BusyBitTable:                      NewBusyTable(),
-		IssuedInstructionPipelineRegister: NewIssuedInstructionPipelineRegister(),
-		AluPipelineRegisters:              NewAluPipelineRegisters(),
+		IssuedInstructionPipelineRegister: NewInstructionPipelineRegister(),
+		AluPipelineRegisters:              NewInstructionPipelineRegister(),
 		ForwardingPaths:                   NewForwardingPaths(),
+		CommitPipeline:                    NewCommitPipelineRegister(),
 	}
 
 	for i := range ps.PhysicalRegisterFile {

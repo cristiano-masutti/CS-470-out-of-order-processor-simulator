@@ -44,61 +44,37 @@ func (dpr *DirPipelineRegister) LatchPCPipelineRegister() {
 }
 
 func (dpr *DirPipelineRegister) GetCurrentValue() []uint64 {
+	if len(dpr.CurrentDecodedInstructions) == 0 {
+		return []uint64{}
+	}
 	return dpr.CurrentDecodedInstructions
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-// IssuedInstructionPipelineRegister represents pipeline register between Issue and Execution
-type IssuedInstructionPipelineRegister struct {
-	currentIssuedInstruction []IntegerQueueEntry
-	nextIssuedInstruction    []IntegerQueueEntry
+// InstructionsPipelineRegister represents pipeline register in form of IntegerQueueEntry
+type InstructionsPipelineRegister struct {
+	currentInstructions []IntegerQueueEntry
+	nextInstructions    []IntegerQueueEntry
 }
 
-func NewIssuedInstructionPipelineRegister() *IssuedInstructionPipelineRegister {
-	return &IssuedInstructionPipelineRegister{
-		currentIssuedInstruction: make([]IntegerQueueEntry, 0),
-		nextIssuedInstruction:    make([]IntegerQueueEntry, 0),
+func NewInstructionPipelineRegister() *InstructionsPipelineRegister {
+	return &InstructionsPipelineRegister{
+		currentInstructions: make([]IntegerQueueEntry, 0),
+		nextInstructions:    make([]IntegerQueueEntry, 0),
 	}
 }
 
-func (irp *IssuedInstructionPipelineRegister) SetNextSetOfInstructions(entries []IntegerQueueEntry) {
-	irp.nextIssuedInstruction = entries
+func (irp *InstructionsPipelineRegister) SetNextInstructions(entries []IntegerQueueEntry) {
+	irp.nextInstructions = entries
 }
 
-func (irp *IssuedInstructionPipelineRegister) GetCurrentIssuedInstructions() []IntegerQueueEntry {
-	return irp.currentIssuedInstruction
+func (irp *InstructionsPipelineRegister) GetCurrentInstructions() []IntegerQueueEntry {
+	return irp.currentInstructions
 }
 
-func (irp *IssuedInstructionPipelineRegister) Latch() {
-	irp.currentIssuedInstruction = irp.nextIssuedInstruction
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-// AluPipelineRegisters represents pipeline register in Execution stage
-type AluPipelineRegisters struct {
-	currentExecutingInstructions []IntegerQueueEntry
-	nextExecutingInstructions    []IntegerQueueEntry
-}
-
-func NewAluPipelineRegisters() *AluPipelineRegisters {
-	return &AluPipelineRegisters{
-		currentExecutingInstructions: make([]IntegerQueueEntry, 0),
-		nextExecutingInstructions:    make([]IntegerQueueEntry, 0),
-	}
-}
-
-func (apl *AluPipelineRegisters) SetNextExecutingInstructions(entries []IntegerQueueEntry) {
-	apl.nextExecutingInstructions = entries
-}
-
-func (apl *AluPipelineRegisters) GetNextExecutingInstructions() []IntegerQueueEntry {
-	return apl.nextExecutingInstructions
-}
-
-func (apl *AluPipelineRegisters) Latch() {
-	apl.currentExecutingInstructions = apl.nextExecutingInstructions
+func (irp *InstructionsPipelineRegister) Latch() {
+	irp.currentInstructions = irp.nextInstructions
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -120,4 +96,40 @@ func NewForwardingPaths() *ForwardingPaths {
 
 func (fq *ForwardingPaths) SetCompletedInstruction(instructions []ForwardingPathsEntry) {
 	fq.completedInstructions = instructions
+}
+
+func (fq *ForwardingPaths) GetCompletedInstructions() []ForwardingPathsEntry {
+	return fq.completedInstructions
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+type CommitPipelineRegisterEntry struct {
+	Done      bool
+	Exception bool
+	PC        uint64
+}
+
+type CommitPipelineRegister struct {
+	CurrentRegister []CommitPipelineRegisterEntry
+	NextRegister    []CommitPipelineRegisterEntry
+}
+
+func NewCommitPipelineRegister() *CommitPipelineRegister {
+	return &CommitPipelineRegister{
+		CurrentRegister: make([]CommitPipelineRegisterEntry, 0),
+		NextRegister:    make([]CommitPipelineRegisterEntry, 0),
+	}
+}
+
+func (cr *CommitPipelineRegister) SetNextRegister(newRegister []CommitPipelineRegisterEntry) {
+	cr.NextRegister = newRegister
+}
+
+func (cr *CommitPipelineRegister) GetCurrentRegister() []CommitPipelineRegisterEntry {
+	return cr.CurrentRegister
+}
+
+func (cr *CommitPipelineRegister) Latch() {
+	cr.CurrentRegister = cr.NextRegister
 }
