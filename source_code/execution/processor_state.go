@@ -12,7 +12,7 @@ type ProcessorState struct {
 	PCP                               *PCPipelineRegister
 	DPR                               *DirPipelineRegister
 	PhysicalRegisterFile              [64]uint64
-	Exception                         bool
+	Exception                         *ExceptionFlag
 	ExceptionPC                       uint64
 	RegisterMapTable                  [32]uint64
 	FreeList                          *FreeList
@@ -38,7 +38,7 @@ func NewProcessorState(instructions []Instruction) *ProcessorState {
 			NewDecodedInstructions:     make([]uint64, 0),
 			BackPressure:               false,
 		},
-		Exception:                         false,
+		Exception:                         NewExceptionFlag(),
 		ExceptionPC:                       0,
 		FreeList:                          NewFreeList(),
 		ActiveList:                        NewActiveList(),
@@ -88,7 +88,7 @@ func (ps *ProcessorState) SaveState(filename string) error {
 		ActiveList:           ps.ActiveList.GetActiveList(),
 		BusyBitTable:         ps.BusyBitTable.GetBusyBitTable(),
 		DecodedPCs:           ps.DPR.GetCurrentValue(),
-		Exception:            ps.Exception,
+		Exception:            ps.Exception.GetCurrentStatus(),
 		ExceptionPC:          ps.ExceptionPC,
 		FreeList:             ps.FreeList.GetFreeList(),
 		IntegerQueue:         ps.IntegerQueue.GetCurrentIntegerQueue(),

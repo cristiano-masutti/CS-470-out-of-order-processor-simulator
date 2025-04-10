@@ -204,3 +204,29 @@ func (qe *IntegerQueue) GetReadyInstructions() []IntegerQueueEntry {
 func (qe *IntegerQueue) GetCurrentIntegerQueue() []IntegerQueueEntry {
 	return qe.CurrentIntegerQueueEntries
 }
+
+///////////////////////////////////////////////////////////////////////////
+
+type ExceptionFlag struct {
+	currentStatus bool
+	nextStatus    bool
+}
+
+func NewExceptionFlag() *ExceptionFlag {
+	return &ExceptionFlag{
+		currentStatus: false,
+		nextStatus:    false,
+	}
+}
+
+func (ef *ExceptionFlag) GetCurrentStatus() bool {
+	return ef.currentStatus
+}
+
+func (ef *ExceptionFlag) SetNextStatus(nextStatus bool) {
+	ef.nextStatus = nextStatus
+}
+
+func (ef *ExceptionFlag) Latch() {
+	ef.currentStatus = ef.nextStatus
+}
