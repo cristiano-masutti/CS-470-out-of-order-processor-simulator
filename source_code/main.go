@@ -38,16 +38,8 @@ func main() {
 	}
 
 	for i := 0; i < 22; i++ {
-		log.Printf("cycle: ", i)
-		err = processorState.Propagate()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = processorState.Latch()
-		if err != nil {
-			log.Fatal(err)
-		}
+		processorState.Propagate()
+		processorState.Latch()
 
 		err = processorState.SaveState(outputFile)
 		if err != nil {

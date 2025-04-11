@@ -95,7 +95,22 @@ func (al *ActiveList) Append(entry ActiveListEntry) {
 }
 
 func (al *ActiveList) GetActiveList() []ActiveListEntry {
-	return al.CurrentActiveListEntries
+	original := al.CurrentActiveListEntries
+	copied := make([]ActiveListEntry, len(original))
+	copy(copied, original)
+	return copied
+}
+
+func (al *ActiveList) SetDoneBitForInstructions(executedInstructions []CommitPipelineRegisterEntry) {
+	for _, instr := range executedInstructions {
+		for i := range al.NextActiveListEntries {
+			if al.NextActiveListEntries[i].PC == instr.PC {
+				al.NextActiveListEntries[i].Done = instr.Done
+				al.NextActiveListEntries[i].Exception = instr.Exception
+				break
+			}
+		}
+	}
 }
 
 func (al *ActiveList) GetIfSpaceAvailable() bool {
@@ -135,6 +150,10 @@ func NewIntegerQueue() *IntegerQueue {
 		CurrentIntegerQueueEntries: make([]IntegerQueueEntry, 0),
 		NextIntegerQueueEntries:    make([]IntegerQueueEntry, 0),
 	}
+}
+
+func (qe *IntegerQueue) Reset() {
+	qe.NextIntegerQueueEntries = make([]IntegerQueueEntry, 0)
 }
 
 func (qe *IntegerQueue) Append(entry IntegerQueueEntry) {

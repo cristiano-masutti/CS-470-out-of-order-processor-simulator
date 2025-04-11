@@ -13,7 +13,7 @@ type ProcessorState struct {
 	DPR                               *DirPipelineRegister
 	PhysicalRegisterFile              [64]uint64
 	Exception                         *ExceptionFlag
-	ExceptionPC                       uint64
+	ExceptionPC                       *PCPipelineRegister
 	RegisterMapTable                  [32]uint64
 	FreeList                          *FreeList
 	BusyBitTable                      *BusyBitTable
@@ -28,18 +28,11 @@ type ProcessorState struct {
 // NewProcessorState create new ProcessorState
 func NewProcessorState(instructions []Instruction) *ProcessorState {
 	ps := &ProcessorState{
-		InputInstructions: instructions,
-		PCP: &PCPipelineRegister{
-			CurrentValue: 0,
-			NewValue:     0,
-		},
-		DPR: &DirPipelineRegister{
-			CurrentDecodedInstructions: make([]uint64, 0),
-			NewDecodedInstructions:     make([]uint64, 0),
-			BackPressure:               false,
-		},
+		InputInstructions:                 instructions,
+		PCP:                               NewPCPipelineRegister(),
+		DPR:                               NewDirPipelineRegister(),
 		Exception:                         NewExceptionFlag(),
-		ExceptionPC:                       0,
+		ExceptionPC:                       NewPCPipelineRegister(),
 		FreeList:                          NewFreeList(),
 		ActiveList:                        NewActiveList(),
 		IntegerQueue:                      NewIntegerQueue(),
@@ -78,21 +71,15 @@ type SaveState struct {
 }
 
 func (ps *ProcessorState) SaveState(filename string) error {
-	var pc uint64
-
-	if ps.PCP != nil {
-		pc = ps.PCP.CurrentValue
-	}
-
 	newState := SaveState{
 		ActiveList:           ps.ActiveList.GetActiveList(),
 		BusyBitTable:         ps.BusyBitTable.GetBusyBitTable(),
 		DecodedPCs:           ps.DPR.GetCurrentValue(),
 		Exception:            ps.Exception.GetCurrentStatus(),
-		ExceptionPC:          ps.ExceptionPC,
+		ExceptionPC:          ps.ExceptionPC.GetCurrentValue(),
 		FreeList:             ps.FreeList.GetFreeList(),
 		IntegerQueue:         ps.IntegerQueue.GetCurrentIntegerQueue(),
-		PC:                   pc,
+		PC:                   ps.PCP.GetCurrentValue(),
 		PhysicalRegisterFile: ps.PhysicalRegisterFile,
 		RegisterMapTable:     ps.RegisterMapTable,
 	}

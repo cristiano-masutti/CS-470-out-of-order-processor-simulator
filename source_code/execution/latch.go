@@ -1,6 +1,6 @@
 package execution
 
-func (ps *ProcessorState) Latch() error {
+func (ps *ProcessorState) Latch() {
 	ps.PCP.LatchPCPipelineRegister()
 	ps.DPR.LatchPCPipelineRegister()
 	ps.ActiveList.Latch()
@@ -8,5 +8,4 @@ func (ps *ProcessorState) Latch() error {
 	ps.IssuedInstructionPipelineRegister.Latch()
 	ps.AluPipelineRegisters.Latch()
 	ps.CommitPipeline.Latch()
-	return nil
 }

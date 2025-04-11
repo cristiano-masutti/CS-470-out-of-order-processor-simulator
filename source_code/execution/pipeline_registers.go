@@ -6,8 +6,15 @@ type PCPipelineRegister struct {
 	NewValue     uint64
 }
 
-func (pcpr *PCPipelineRegister) SetNextValue(incNumber uint64) {
-	pcpr.NewValue = pcpr.CurrentValue + incNumber
+func NewPCPipelineRegister() *PCPipelineRegister {
+	return &PCPipelineRegister{
+		CurrentValue: 0,
+		NewValue:     0,
+	}
+}
+
+func (pcpr *PCPipelineRegister) SetNextValue(newPc uint64) {
+	pcpr.NewValue = newPc
 }
 
 func (pcpr *PCPipelineRegister) LatchPCPipelineRegister() {
@@ -25,6 +32,14 @@ type DirPipelineRegister struct {
 	CurrentDecodedInstructions []uint64
 	NewDecodedInstructions     []uint64
 	BackPressure               bool
+}
+
+func NewDirPipelineRegister() *DirPipelineRegister {
+	return &DirPipelineRegister{
+		CurrentDecodedInstructions: make([]uint64, 0),
+		NewDecodedInstructions:     make([]uint64, 0),
+		BackPressure:               false,
+	}
 }
 
 func (dpr *DirPipelineRegister) SetBackPressure(BackPressure bool) {
