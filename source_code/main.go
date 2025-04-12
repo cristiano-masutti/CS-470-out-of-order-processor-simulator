@@ -5,6 +5,7 @@ import (
 	"aca_hw1/files_operations"
 	"fmt"
 	"log"
+	"os"
 )
 
 /*
@@ -13,15 +14,12 @@ Ideas:
 if or at the false: stop
 */
 func main() {
-	//if len(os.Args) < 3 {
-	//	log.Fatal("Please provide path to input and output file")
-	//}
-	//
-	//inputFile := os.Args[1]
-	//outputFile := os.Args[2]
+	if len(os.Args) < 3 {
+		log.Fatal("Please provide path to input and output file")
+	}
 
-	inputFile := "../given_tests/01/input.json"
-	outputFile := "output.json"
+	inputFile := os.Args[1]
+	outputFile := os.Args[2]
 
 	decodedInputInstructions, err := files_operations.ReadInputFile(inputFile)
 	if err != nil {
@@ -37,7 +35,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for i := 0; i < 22; i++ {
+	//for i := 0; i < 23; i++ {
+	for {
 		processorState.Propagate()
 		processorState.Latch()
 
@@ -45,16 +44,34 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		if processorState.Exception ||
+			(int(processorState.PCP.GetCurrentValue()) == len(decodedInputInstructions) &&
+				len(processorState.ActiveList.GetActiveList()) == 0) {
+			break
+		}
 	}
 
-	//if processorState.PC == uint64(len(program)) && len(processorState.ActiveList) == 0 {
-	//	break
-	//}
+	// Deal with exception if present
+	if processorState.Exception {
+		for {
+			processorState.RecoverExceptionState()
+			processorState.Latch()
 
-	//err = files_operations.WriteOutputFile(outputFile, decodedInputInstructions)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+			err = processorState.SaveState(outputFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if !processorState.Exception {
+				break
+			}
+
+			if len(processorState.ActiveList.GetActiveList()) == 0 {
+				processorState.Exception = false
+			}
+		}
+	}
 
 	fmt.Println("Output written to", outputFile)
 }

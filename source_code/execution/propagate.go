@@ -13,7 +13,7 @@ func (ps *ProcessorState) Propagate() {
 }
 
 func (ps *ProcessorState) FetchAndDecode() {
-	if ps.Exception.GetCurrentStatus() {
+	if ps.Exception {
 		ps.FetchAndDecodeExceptionFlow()
 	} else {
 		ps.FetchAndDecodeRegularFlow()
@@ -21,7 +21,7 @@ func (ps *ProcessorState) FetchAndDecode() {
 }
 
 func (ps *ProcessorState) RenameAndDispatch() {
-	if ps.Exception.GetCurrentStatus() {
+	if ps.Exception {
 		ps.RenameAndDispatchExceptionFlow()
 	} else {
 		ps.RenameAndDispatchRegularFlow()
@@ -29,7 +29,7 @@ func (ps *ProcessorState) RenameAndDispatch() {
 }
 
 func (ps *ProcessorState) Issue() {
-	if ps.Exception.GetCurrentStatus() {
+	if ps.Exception {
 		ps.IssueExceptionFlow()
 	} else {
 		ps.IssueRegularFlow()
@@ -37,7 +37,7 @@ func (ps *ProcessorState) Issue() {
 }
 
 func (ps *ProcessorState) Execute() {
-	if ps.Exception.GetCurrentStatus() {
+	if ps.Exception {
 		ps.ExecuteExceptionFlow()
 	} else {
 		ps.ExecuteRegularFlow()
@@ -45,9 +45,5 @@ func (ps *ProcessorState) Execute() {
 }
 
 func (ps *ProcessorState) Commit() {
-	if ps.Exception.GetCurrentStatus() {
-		ps.CommitExceptionFlow()
-	} else {
-		ps.CommitRegularFlow()
-	}
+	ps.CommitRegularFlow()
 }

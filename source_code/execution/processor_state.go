@@ -12,8 +12,8 @@ type ProcessorState struct {
 	PCP                               *PCPipelineRegister
 	DPR                               *DirPipelineRegister
 	PhysicalRegisterFile              [64]uint64
-	Exception                         *ExceptionFlag
-	ExceptionPC                       *PCPipelineRegister
+	Exception                         bool
+	ExceptionPC                       uint64
 	RegisterMapTable                  [32]uint64
 	FreeList                          *FreeList
 	BusyBitTable                      *BusyBitTable
@@ -31,8 +31,8 @@ func NewProcessorState(instructions []Instruction) *ProcessorState {
 		InputInstructions:                 instructions,
 		PCP:                               NewPCPipelineRegister(),
 		DPR:                               NewDirPipelineRegister(),
-		Exception:                         NewExceptionFlag(),
-		ExceptionPC:                       NewPCPipelineRegister(),
+		Exception:                         false,
+		ExceptionPC:                       0,
 		FreeList:                          NewFreeList(),
 		ActiveList:                        NewActiveList(),
 		IntegerQueue:                      NewIntegerQueue(),
@@ -75,8 +75,8 @@ func (ps *ProcessorState) SaveState(filename string) error {
 		ActiveList:           ps.ActiveList.GetActiveList(),
 		BusyBitTable:         ps.BusyBitTable.GetBusyBitTable(),
 		DecodedPCs:           ps.DPR.GetCurrentValue(),
-		Exception:            ps.Exception.GetCurrentStatus(),
-		ExceptionPC:          ps.ExceptionPC.GetCurrentValue(),
+		Exception:            ps.Exception,
+		ExceptionPC:          ps.ExceptionPC,
 		FreeList:             ps.FreeList.GetFreeList(),
 		IntegerQueue:         ps.IntegerQueue.GetCurrentIntegerQueue(),
 		PC:                   ps.PCP.GetCurrentValue(),

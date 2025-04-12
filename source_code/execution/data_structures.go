@@ -94,6 +94,25 @@ func (al *ActiveList) Append(entry ActiveListEntry) {
 	al.NextActiveListEntries = append(al.NextActiveListEntries, entry)
 }
 
+func (al *ActiveList) GetBottomInstructionsInReverseOrder() []ActiveListEntry {
+	n := len(al.CurrentActiveListEntries)
+	count := 4
+	if n < 4 {
+		count = n
+	}
+
+	bottom := al.CurrentActiveListEntries[n-count:]
+
+	reversed := make([]ActiveListEntry, count)
+	for i := 0; i < count; i++ {
+		reversed[i] = bottom[count-1-i]
+	}
+
+	al.NextActiveListEntries = al.CurrentActiveListEntries[:n-count]
+
+	return reversed
+}
+
 func (al *ActiveList) GetActiveList() []ActiveListEntry {
 	original := al.CurrentActiveListEntries
 	copied := make([]ActiveListEntry, len(original))
@@ -222,30 +241,4 @@ func (qe *IntegerQueue) GetReadyInstructions() []IntegerQueueEntry {
 
 func (qe *IntegerQueue) GetCurrentIntegerQueue() []IntegerQueueEntry {
 	return qe.CurrentIntegerQueueEntries
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-type ExceptionFlag struct {
-	currentStatus bool
-	nextStatus    bool
-}
-
-func NewExceptionFlag() *ExceptionFlag {
-	return &ExceptionFlag{
-		currentStatus: false,
-		nextStatus:    false,
-	}
-}
-
-func (ef *ExceptionFlag) GetCurrentStatus() bool {
-	return ef.currentStatus
-}
-
-func (ef *ExceptionFlag) SetNextStatus(nextStatus bool) {
-	ef.nextStatus = nextStatus
-}
-
-func (ef *ExceptionFlag) Latch() {
-	ef.currentStatus = ef.nextStatus
 }

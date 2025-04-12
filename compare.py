@@ -12,10 +12,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("input", help="The input JSON for comparison.", type=argparse.FileType("r"))
 parser.add_argument("--reference", "-r", required=True, help="The reference JSON.", type=argparse.FileType("r"))
 
-args = parser.parse_args()
+operands = parser.parse_args()
 
-INPUT = json.load(args.input)
-REFERENCE = json.load(args.reference)
+INPUT = json.load(operands.input)
+REFERENCE = json.load(operands.reference)
 
 # INPUT is [{"ActiveList": [], "BusyBitTable": [bool], "DecodedPCs": int, "Exception": bool, "ExceptionPC": int, "FreeList": [int], "IntegerQueue": [{}], "PC": int, "PhysicalRegisterFile": [int], "RegisterMapTable": [int], }]
 # ActiveList: [{"Done": bool, "Exception": bool, "LogicalDestination": int, "OldDestination": int, "PC": int}]

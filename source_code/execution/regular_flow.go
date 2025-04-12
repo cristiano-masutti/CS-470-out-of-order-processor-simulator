@@ -153,10 +153,12 @@ func (ps *ProcessorState) ExecuteRegularFlow() {
 		value, exception := instruction.Execute(iq.OpAValue, iq.OpBValue)
 		res := uint64(value)
 
-		results = append(results, ForwardingPathsEntry{
-			tag:   iq.DestRegister,
-			value: res,
-		})
+		if !exception {
+			results = append(results, ForwardingPathsEntry{
+				tag:   iq.DestRegister,
+				value: res,
+			})
+		}
 
 		toCommitInstructions = append(toCommitInstructions, CommitPipelineRegisterEntry{
 			Done:      true,
@@ -181,8 +183,8 @@ func (ps *ProcessorState) CommitRegularFlow() {
 		}
 
 		if instr.Exception {
-			ps.Exception.SetNextStatus(true)
-			ps.ExceptionPC.SetNextValue(instr.PC)
+			ps.Exception = true
+			ps.ExceptionPC = instr.PC
 			break
 		}
 
